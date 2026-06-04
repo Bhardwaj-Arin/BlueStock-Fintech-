@@ -1,4 +1,4 @@
--- Bluestock Mutual Fund Analytics — Operational SQL Queries
+-- Bluestock Mutual Fund Analytics ï¿½ Operational SQL Queries
 -- Generated for Day 2 Tasks Deliverables
 
 -- 1. Top 5 Funds by Total Asset Under Management (AUM) equivalent

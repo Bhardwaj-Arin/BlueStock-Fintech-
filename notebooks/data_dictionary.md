@@ -1,4 +1,4 @@
-# Data Dictionary — Mutual Fund Analytics Database
+# Data Dictionary ï¿½ Mutual Fund Analytics Database
 
 ## 1. Table: dim_fund (Dimension Table)
 Defines structural details and risk attributes for each unique mutual fund scheme tracking index.
