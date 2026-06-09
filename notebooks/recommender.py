@@ -16,23 +16,31 @@ def run_recommender():
         print(f"Error loading system metrics: {e}")
         return
 
-    # Dynamically find the correct risk column name (handles 'risk_grade' or 'risk_category')
-    risk_col = 'risk_grade' if 'risk_grade' in df_scheme.columns else 'risk_category'
-    if risk_col not in df_scheme.columns:
-        # Fallback if it's named something else entirely
-        risk_col = [c for c in df_scheme.columns if 'risk' in c or 'grade' in c][0]
+    # HARDCODED FIX: Manually rename the risk column in memory so it matches no matter what
+    # This prevents any KeyError from happening during the merge or groupby steps
+    possible_risk_cols = ['risk_grade', 'risk_category', 'risk_type']
+    found_col = None
+    for col in df_scheme.columns:
+        if col in possible_risk_cols or 'risk' in col.lower():
+            found_col = col
+            break
+
+    if found_col:
+        df_scheme = df_scheme.rename(columns={found_col: 'risk_category'})
+    else:
+        print("Error: Could not identify a risk tracking column in your source file.")
+        return
 
     # Calculate global Sharpe Ratios for ranking metrics
-    df_raw = pd.merge(df_nav, df_scheme[['amfi_code', 'scheme_name', risk_col]], on='amfi_code', how='inner')
+    df_raw = pd.merge(df_nav, df_scheme[['amfi_code', 'scheme_name', 'risk_category']], on='amfi_code', how='inner')
     df_raw['daily_return'] = df_raw.groupby('scheme_name')['nav'].pct_change()
 
-    metrics = df_raw.groupby(['scheme_name', risk_col])['daily_return'].agg(['mean', 'std']).reset_index()
+    metrics = df_raw.groupby(['scheme_name', 'risk_category'])['daily_return'].agg(['mean', 'std']).reset_index()
     metrics['sharpe_ratio'] = (metrics['mean'] / metrics['std']) * np.sqrt(252)
     metrics = metrics.dropna().sort_values(by='sharpe_ratio', ascending=False)
 
     user_input = input("\nEnter your risk appetite (Low / Moderate / High): ").strip().lower()
 
-    # Map inputs to standard risk labels found in datasets
     if user_input == 'low':
         target_categories = ['Low', 'Low to Moderate', 'Moderate']
     elif user_input == 'moderate':
@@ -43,11 +51,11 @@ def run_recommender():
         print("Invalid option. Defaulting to 'Moderate' risk mapping profile.")
         target_categories = ['Moderate', 'Moderately High', 'Medium']
 
-    recommendations = metrics[metrics[risk_col].isin(target_categories)].head(3)
+    recommendations = metrics[metrics['risk_category'].isin(target_categories)].head(3)
 
     print(f"\nTop 3 Recommended Funds for a '{user_input.upper()}' Risk Appetite Profile:")
     print("--------------------------------------------------------------------------------")
-    print(recommendations[['scheme_name', risk_col, 'sharpe_ratio']].to_string(index=False))
+    print(recommendations[['scheme_name', 'risk_category', 'sharpe_ratio']].to_string(index=False))
     print("--------------------------------------------------------------------------------")
 
 if __name__ == "__main__":
