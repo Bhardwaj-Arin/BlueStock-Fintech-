@@ -1,3 +1,9 @@
+"""
+Bluestock Fintech Mutual Fund Capstone Project
+Author: Data Science & Analytics Intern
+Description: Cleaned execution layer for the automated data processing pipeline.
+"""
+
 import pandas as pd
 import numpy as np
 import os
